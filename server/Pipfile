@@ -4,8 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [scripts]
-dev = "py auto_serv.py"
-run = "py serv.py"
+dev = "py scripts/auto_serv.py"
+run = "py scripts/serv.py"
 
 [packages]
 twisted = {extras = ["tls"], version = "*"}

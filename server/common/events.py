@@ -23,8 +23,12 @@ class EventHandler:
 
     def emit(self, event_name, *args, **kwargs):
         # print(self.events)
+
         if event_name in self.events:
+
             for callback in self.events[event_name]:
+                # print(f"Fired callback for {event_name} matching: {callback}")
+
                 callback(*args, **kwargs)
         for pattern, callbacks in self.events.items():
             if (
@@ -32,9 +36,8 @@ class EventHandler:
                 and event_name.startswith(pattern[:-2])
                 or pattern.startswith(("*", "all"))
             ):
-                print("all1")
                 for callback in callbacks:
+                    # print(f"Fired callback for {event_name} matching: {pattern}")
                     callback(*args, **kwargs)
-        for callback in self.events["all"]:
-            callback(event_name, *args, **kwargs)
+
         return self

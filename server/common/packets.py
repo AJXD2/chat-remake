@@ -7,6 +7,29 @@ class VerificationError(Exception):
 
 
 class BasePacket(object):
+    """Base of all Packet types.
+
+    Args:
+        data (dict): The data to send.
+
+    .. highlight:: python
+    .. code-block:: python
+
+        class OtherPacket(BasePacket):
+            def verify(self):
+                # Verification code here
+                verified = False
+                if verified:
+                    return True
+
+                return False
+
+    Raises:
+        VerificationError: If verification of packet failed.
+        NotImplementedError: If the subclass does not implement the verify method.
+
+    """
+
     subclasses = {}
     extra_prep = []
 
@@ -56,11 +79,10 @@ class BasePacket(object):
 
 
 class MessagePacket(BasePacket):
+    """Extension of BasePacket that allows the server and client to send str messages to each other."""
+
     def __init__(self, data):
         super().__init__(data)
-
-    def prep_content(self):
-        pass
 
     def verify(self):
         try:
@@ -73,6 +95,8 @@ class MessagePacket(BasePacket):
 
 
 class KickPacket(BasePacket):
+    """Extension of BasePacket that allows the server to kick a user."""
+
     def __init__(self, data):
         super().__init__(data)
 
@@ -87,20 +111,22 @@ class KickPacket(BasePacket):
 
 
 if __name__ == "__main__":
-    import os
+    from rich.console import Console
+    from rich.table import Table
 
-    termsize = os.get_terminal_size()
-    print(
-        "=" * round((termsize.columns / 4) - (len(MessagePacket.get_type()) / 2))
-        + MessagePacket.get_type()
-        + "=" * round((termsize.columns / 4) - (len(MessagePacket.get_type()) / 2))
+    console = Console()
+    table = Table(
+        show_header=True,
+        header_style="bold magenta",
+        title="Packet Types",
+        title_style="bold magenta",
+        show_lines=True,
     )
 
-    msg = MessagePacket({"content": "Hello World!"})
-    print(f"Prepped: {msg.prep()}")
-    print(f"Decoded: {MessagePacket.decode(msg.prep())}")
-    print(
-        "=" * round((termsize.columns / 4) - (len(MessagePacket.get_type()) / 2))
-        + MessagePacket.get_type()
-        + "=" * round((termsize.columns / 4) - (len(MessagePacket.get_type()) / 2))
-    )
+    table.add_column("Name")
+    table.add_column("Description")
+
+    for name, cls in BasePacket.subclasses.items():
+        table.add_row(name, cls.__doc__)
+
+    console.print(table)

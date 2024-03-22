@@ -1,10 +1,10 @@
 from typing import Callable, Dict, List
 from uuid import uuid4
 from twisted.internet.protocol import Protocol
-from server.app.classes.UserProtocol import UserProtocol
-from server.app.classes.UserInfo import UserInfo
-from server.app.classes.enums import UserState, UserJoinState
-from server.app.classes.PrecheckResponse import PrecheckResponse
+from app.classes.UserProtocol import UserProtocol
+from app.classes.UserInfo import UserInfo
+from app.classes.enums import UserState, UserJoinState
+from app.classes.PrecheckResponse import PrecheckResponse
 from common.packets import BasePacket, KickPacket, MessagePacket
 import json
 from common.events import EventHandler
@@ -14,14 +14,21 @@ from common.events import EventHandler
 
 class UserRegistry:
 
-    def __init__(self) -> None:
+    def __init__(self, server) -> None:
         """
         Initializes a new UserRegistry instance.
 
         Manages a list of connected users.
         """
+        from app.factory import ServerFactory as Server
+
+        self.server: Server = server
+
         self.users: List[UserProtocol] = []
-        self.prechecks = EventHandler().on("Precheck.Join", self.check_username)
+        self.prechecks = EventHandler()
+
+    def __init_default_prechecks(self):
+        self.prechecks.on("Precheck.Join", self.__builtin_precheck_check_username)
 
     @property
     def online(self):
@@ -45,7 +52,7 @@ class UserRegistry:
 
         return len(self.online)
 
-    def check_username(self, user: UserProtocol) -> PrecheckResponse:
+    def __builtin_precheck_check_username(self, user: UserProtocol) -> PrecheckResponse:
         """
         Checks if a username is already in use.
 

@@ -1,3 +1,6 @@
+import logging
+
+
 class EventHandler:
     def __init__(self):
         self.events = {"all": []}
@@ -23,6 +26,10 @@ class EventHandler:
 
     def emit(self, event_name, *args, **kwargs):
         # print(self.events)
+        logging.debug(f"Events: {self.events}")
+        logging.debug(f"Eventname: {event_name}")
+        logging.debug(f"Args: {args}")
+        logging.debug(f"Kwargs: {kwargs}")
         if event_name in self.events:
             for callback in self.events[event_name]:
                 callback(*args, **kwargs)
@@ -32,7 +39,7 @@ class EventHandler:
                 and event_name.startswith(pattern[:-2])
                 or pattern.startswith(("*", "all"))
             ):
-
                 for callback in callbacks:
                     callback(*args, **kwargs)
+
         return self

@@ -1,12 +1,15 @@
 import json
+import logging
 import time
 from uuid import uuid4
 from twisted.internet.protocol import Protocol
 from twisted.internet import reactor
 from common.events import EventHandler
 from common.packets import BasePacket, MessagePacket
-from server.app.classes.UserInfo import UserInfo
-from server.app.classes.enums import UserState, UserJoinState
+from app.classes.UserInfo import UserInfo
+from app.classes.enums import UserState, UserJoinState
+
+logger = logging.getLogger("Server")
 
 
 class UserProtocol(Protocol):
@@ -18,20 +21,20 @@ class UserProtocol(Protocol):
         Args:
             server (Server): Reference to the server instance.
         """
-        from server.app.factory import ServerFactory as Server
+        from app.factory import ServerFactory as Server
 
-        self.state = UserJoinState.JOINING
-        self.motd = "Welcome to the chat server! The first message you send will be your username!"
         self.server: Server = server
+
+        self.motd = server.config.get("General", "motd")
         self.info = UserInfo(uuid4(), None)
-        self.events = EventHandler()
-        self.events.on("Connection.Made", self.server.users.addUser)
+        self.events = server.events
+        self.server.events.on("Connection.Made", self.server.users.addUser)
         if self.server.debug:
-            self.events.on("all", self.debug)
+            self.server.events.on("*", self.debug)
 
     def debug(self, *args, **kwargs):
 
-        print(f"[{self.info.id}] {args} {kwargs}")
+        logger.debug(f"[{self.info.id}] {args} {kwargs}")
 
     def dataReceived(self, data: bytes) -> None:
         """
@@ -43,7 +46,7 @@ class UserProtocol(Protocol):
         packet = BasePacket.decode(data)
 
         if packet:
-            self.events.emit(f"Recv.{packet.type}", packet)
+            self.server.events.emit(f"Recv.{packet.type}", packet)
 
     def connectionMade(self) -> None:
         """
@@ -51,7 +54,7 @@ class UserProtocol(Protocol):
 
         Registers the user with the server's UserRegistry.
         """
-        self.events.emit("Connection.Made", self)
+        self.server.events.emit("Connection.Made", self)
 
     def connectionLost(self, reason: str) -> None:
         """
@@ -62,7 +65,7 @@ class UserProtocol(Protocol):
         Args:
             reason (str): Reason for the connection loss.
         """
-        self.events.emit("Connection.Lost")
+        self.server.events.emit("Connection.Lost", self)
 
     def send(self, data: bytes | BasePacket) -> None:
         """
@@ -74,7 +77,7 @@ class UserProtocol(Protocol):
         if issubclass(data.__class__, BasePacket):
             data = data.prep()
         packet = BasePacket.decode(data)
-        self.events.emit(f"Send.{packet.type}", packet)
+        self.server.events.emit(f"Send.{packet.type}", packet)
         self.transport.write(data)
 
     def __str__(self) -> str:

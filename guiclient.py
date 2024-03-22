@@ -1,5 +1,6 @@
 from threading import Thread
 import tkinter as tk
+from tkinter import simpledialog
 from twisted.internet import protocol, reactor
 from twisted.internet.protocol import connectionDone
 from twisted.python.failure import Failure
@@ -76,7 +77,15 @@ class ChatApp(tk.Tk):
         )
         self.send_button.pack(side=tk.RIGHT)
 
-        self.client = reactor.connectTCP("localhost", 2000, ChatClientFactory(self))
+        self.connect_to_server()
+
+    def connect_to_server(self):
+        ip = simpledialog.askstring(
+            "Connect to Server", "Enter Server IP Address:"
+        ).strip()
+        port = simpledialog.askinteger("Connect to Server", "Enter Server Port:")
+        if ip and port:
+            self.client = reactor.connectTCP(ip, port, ChatClientFactory(self))
 
     def send_message(self, event=None):  # Accept event argument for button click
         message = self.input_entry.get()
